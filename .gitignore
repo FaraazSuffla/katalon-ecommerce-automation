@@ -1,0 +1,13 @@
+# Katalon generated
+bin/
+Libs/
+Drivers/
+Reports/
+Screenshots/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
