@@ -1,47 +1,55 @@
-name: CI - Selenium Java Tests
+name: CI - Project Validation
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
-  test:
-    name: Run TestNG Selenium Tests
+  validate:
+    name: Validate Katalon Project Structure
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
+      - name: Verify project file exists
+        run: |
+          if [ -f "Katalon-ecommerce-automation/Katalon-ecommerce-automation.prj" ]; then
+            echo "✅ Katalon project file found"
+          else
+            echo "❌ Katalon project file missing" && exit 1
+          fi
 
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
+      - name: Verify test cases exist
+        run: |
+          TC_COUNT=$(find "Katalon-ecommerce-automation/Test Cases" -name "*.tc" | wc -l)
+          echo "✅ Found $TC_COUNT test case(s)"
+          if [ "$TC_COUNT" -eq 0 ]; then
+            echo "❌ No test cases found" && exit 1
+          fi
 
-      - name: Build with Maven
-        run: mvn clean compile -B
+      - name: Verify object repository exists
+        run: |
+          RS_COUNT=$(find "Katalon-ecommerce-automation/Object Repository" -name "*.rs" | wc -l)
+          echo "✅ Found $RS_COUNT object(s) in repository"
 
-      - name: Run tests (headless)
-        run: mvn test -B -Dheadless=true
-        continue-on-error: true
+      - name: Verify scripts exist
+        run: |
+          SCRIPT_COUNT=$(find "Katalon-ecommerce-automation/Scripts" -name "*.groovy" | wc -l)
+          echo "✅ Found $SCRIPT_COUNT Groovy script(s)"
+          if [ "$SCRIPT_COUNT" -eq 0 ]; then
+            echo "❌ No Groovy scripts found" && exit 1
+          fi
 
-      - name: Upload Surefire reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: surefire-reports
-          path: target/surefire-reports/
-
-      - name: Upload Cucumber reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cucumber-reports
-          path: target/cucumber-reports/
+      - name: Print project summary
+        run: |
+          echo "========================================="
+          echo "       Katalon Project Summary"
+          echo "========================================="
+          echo "Test Cases : $(find 'Katalon-ecommerce-automation/Test Cases' -name '*.tc' | wc -l)"
+          echo "Scripts    : $(find 'Katalon-ecommerce-automation/Scripts' -name '*.groovy' | wc -l)"
+          echo "Objects    : $(find 'Katalon-ecommerce-automation/Object Repository' -name '*.rs' | wc -l)"
+          echo "========================================="
